@@ -24,4 +24,3 @@ uptime >> $LOG_FILE
 
 echo "+++ Check Complete +++" >> $LOG_FILE
 echo >> $LOG_FILE
-
