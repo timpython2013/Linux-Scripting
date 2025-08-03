@@ -40,41 +40,43 @@ def parse_log_file(log_file_path):
                 # Parse the date format from your script
                 current_record['timestamp'] = datetime.strptime(date_str, "%a %b %d %H:%M:%S %Z %Y")
                 current_record['date'] = current_record['timestamp'].strftime("%Y-%m-%d")
-                current_record['time'] = current_record['timestamp'].strftime("%H:%M:%S")
             except ValueError:
                 # Fallback for different date formats
                 current_record['timestamp'] = date_str
                 current_record['date'] = date_str
-                current_record['time'] = ""
         
         # Parse disk usage
         elif line.startswith("Disk Usage:"):
             i += 1  # Move to next line with actual data
             if i < len(lines):
-                disk_line = lines[i].strip()
+                i += 1 # Skip "Filesystem Size Used..." header line
+                if i < len(lines):
+               	    disk_line = lines[i].strip()
                 # Example: "/dev/sda1       20G  8.5G   11G  45% /"
-                disk_match = re.search(r'(\d+)%', disk_line)
-                if disk_match:
-                    current_record['disk_usage_percent'] = int(disk_match.group(1))
+                    disk_match = re.search(r'(\d+)%', disk_line)
+                    if disk_match:
+                        current_record['disk_usage_percent'] = int(disk_match.group(1))
                 
                 # Extract disk space info
-                parts = disk_line.split()
-                if len(parts) >= 4:
-                    current_record['disk_total'] = parts[1]
-                    current_record['disk_used'] = parts[2]
-                    current_record['disk_available'] = parts[3]
+                    parts = disk_line.split()
+                    if len(parts) >= 5:
+                        current_record['disk_total'] = parts[1]
+                        current_record['disk_used'] = parts[2]
+                        current_record['disk_available'] = parts[3]
         
         # Parse memory usage
         elif line.startswith("Memory Usage:"):
             i += 1  # Move to next line with actual data
             if i < len(lines):
-                mem_line = lines[i].strip()
-                # Example: "Mem:           7.6Gi       2.1Gi       3.2Gi       0.0Ki       2.3Gi       5.2Gi"
-                mem_parts = mem_line.split()
-                if len(mem_parts) >= 3 and mem_parts[0] == "Mem:":
-                    current_record['memory_total'] = mem_parts[1]
-                    current_record['memory_used'] = mem_parts[2]
-                    current_record['memory_available'] = mem_parts[3] if len(mem_parts) > 3 else ""
+                i += 1 # Move to "Mem:" data line
+                if i < len(lines):
+                    mem_line = lines[i].strip()
+                    # Example: "Mem:           7.6Gi       2.1Gi       3.2Gi       0.0Ki       2.3Gi       5.2Gi"
+                    mem_parts = mem_line.split()
+                    if len(mem_parts) >= 3 and mem_parts[0] == "Mem:":
+                        current_record['memory_total'] = mem_parts[1]
+                        current_record['memory_used'] = mem_parts[2]
+                        current_record['memory_available'] = mem_parts[6] if len(mem_parts) > 3 else ""
                     
                     # Calculate memory percentage if possible
                     try:
@@ -122,7 +124,7 @@ def write_csv(records, output_file):
     
     # Define CSV columns
     fieldnames = [
-        'date', 'time', 'timestamp',
+        'date', 'timestamp',
         'disk_usage_percent', 'disk_total', 'disk_used', 'disk_available',
         'memory_usage_percent', 'memory_total', 'memory_used', 'memory_available',
         'user', 'uptime', 'load_average'
